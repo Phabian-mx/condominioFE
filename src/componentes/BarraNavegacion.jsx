@@ -1,25 +1,36 @@
 // Recibimos 'alClickLogin' para que el botón de entrar funcione
-export default function BarraNavegacion({ alClickLogin }) {
+export default function BarraNavegacion({ alClickLogin, alClickInicio }) {
   return (
     // 'fixed top-6 right-6' lo ancla a la esquina superior derecha
     <nav className="fixed top-6 right-6 z-50">
       
-      {/* 'bg-slate-700/80' aplica el gris oscuro transparente a TODA la barra.
-          'backdrop-blur-md' da el efecto de vidrio esmerilado.
+      {/* 'bg-slate-700/80' aplica el gris oscuro transparente.
+          'backdrop-blur-md' da el efecto de vidrio esmerilado (glassmorphism).
+          'rounded-full' crea la forma de píldora.
       */}
       <ul className="flex flex-row items-center gap-8 bg-slate-700/80 backdrop-blur-md px-10 py-3 rounded-full text-white shadow-2xl list-none m-0 border border-white/10">
         
-        {/* Los enlaces normales */}
-        <li className="cursor-pointer font-medium hover:text-gray-300 transition-colors">
+        {/* Opción: Inicio */}
+        <li 
+          onClick={alClickInicio} 
+          className="cursor-pointer font-medium hover:text-gray-300 transition-colors"
+        >
           Inicio
         </li>
-        <li className="cursor-pointer font-medium hover:text-gray-300 transition-colors">
-          Novedades
+        <li 
+          onClick={alClickInicio} 
+          className="cursor-pointer font-medium hover:text-gray-300 transition-colors"
+        >
+           Novedades
         </li>
-        <li className="cursor-pointer font-medium hover:text-gray-300 transition-colors">
+         <li 
+          onClick={alClickInicio} 
+          className="cursor-pointer font-medium hover:text-gray-300 transition-colors"
+        >
           Contáctanos
         </li>
-        
+  
+             
         {/* BOTÓN INICIAR SESIÓN: 
             Ahora es del mismo gris, pero con un borde y un 'hover' 
             un poco más claro para que sepa que es un botón.
