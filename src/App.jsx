@@ -1,10 +1,10 @@
 import { useState } from 'react';
 
-// --- TUS COMPONENTES VISUALES (DISEÑO) ---
+// --- COMPONENTES VISUALES (DISEÑO) ---
 import Portada from "./componentes/Portada";
 import BarraNavegacion from "./componentes/BarraNavegacion";
 
-// --- TUS COMPONENTES FUNCIONALES (LÓGICA SUPABASE) ---
+// --- COMPONENTES FUNCIONALES (LÓGICA SUPABASE) ---
 import Login from "./componentes/Login";  // Este tiene la conexión real
 import Panel from "./componentes/Panel";  // Este (antes Dashboard) muestra los datos
 

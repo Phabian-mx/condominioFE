@@ -62,7 +62,7 @@ function Login({ onLogin }) {
     boton: {
       width: '100%',
       padding: '10px',
-      background: '#007bff', // Azul bonito
+      background: '#007bff', // Azul 
       color: 'white',
       border: 'none',
       borderRadius: '5px',
