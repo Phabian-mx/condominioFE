@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react'; 
+import { CSSTransition } from 'react-transition-group'; // <--- para la tramsicion
 
 // --- COMPONENTES ---
 import Portada from "./componentes/Portada";
@@ -9,27 +10,37 @@ import Panel from "./componentes/Panel";
 function App() {
   const [usuario, setUsuario] = useState(null);
   const [mostrarLogin, setMostrarLogin] = useState(false);
+  
+  // Referencia para la animación (necesario para que no de error en consola)
+  const nodeRef = useRef(null);
 
   return (
     <main className="min-h-screen w-full relative">
       
-      {/* -----------------------------------------------
-          ESCENARIO A: USUARIO NO LOGUEADO (PÚBLICO)
-         ----------------------------------------------- */}
+     
       {!usuario && (
         <>
-          {/* 1. Barra de Navegación (Solo se ve aquí) */}
+    
           <BarraNavegacion 
             alClickLogin={() => setMostrarLogin(true)} 
             alClickInicio={() => setUsuario(null)} 
           />
 
-          {/* 2. Portada (Aquí vive la imagen de fondo) */}
+          {/* 2. Portada (imagen de fondo) */}
           <Portada />
 
-          {/* 3. Modal de Login (Solo si se activó) */}
-          {mostrarLogin && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+       
+          <CSSTransition
+            in={mostrarLogin}
+            timeout={10000}
+            classNames="modal"
+            unmountOnExit
+            nodeRef={nodeRef}
+          >
+            <div 
+              ref={nodeRef} 
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            >
               <div className="relative">
                 <button 
                   onClick={() => setMostrarLogin(false)}
@@ -43,13 +54,11 @@ function App() {
                 }} />
               </div>
             </div>
-          )}
+          </CSSTransition>
         </>
       )}
 
-      {/* -----------------------------------------------
-          ESCENARIO B: USUARIO LOGUEADO (PANEL)
-         ----------------------------------------------- */}
+
       {usuario && (
         <div className="bg-gray-100 min-h-screen w-full">
            {/* Aquí cargamos el Panel, que ya trae su propia cabecera y campana */}

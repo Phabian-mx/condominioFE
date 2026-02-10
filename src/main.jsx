@@ -9,7 +9,7 @@ import Pusher from 'pusher-js';
 
 
 window.Pusher = Pusher;
-
+// Configuracion de echo
 window.Echo = new Echo({
     broadcaster: 'reverb',
     key: 'my-app-key',   
