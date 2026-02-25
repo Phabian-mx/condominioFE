@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { supabase } from '../supabaseClient'; 
 
 function Login({ onLogin }) {
   const [nombre, setNombre] = useState('');
@@ -13,22 +12,30 @@ function Login({ onLogin }) {
     setError(null);
 
     try {
-      const { data, error } = await supabase
-        .from('usuarios')
-        .select('*')
-        .eq('nombre', nombre)
-        .eq('clave', clave)
-        .single();
+      // 🚀 Hacemos la petición a nuestra API en Laravel
+      const respuesta = await fetch('http://localhost:8000/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        // Enviamos los datos en formato JSON
+        body: JSON.stringify({ nombre: nombre, clave: clave })
+      });
 
-      if (error || !data) {
+      const data = await respuesta.json();
+
+      if (data.exito) {
+        // Si el login fue exitoso, pasamos el usuario al componente padre
+        onLogin(data.usuario); 
+      } else {
+        // Si la API devuelve error (exito: false)
         setError('Datos incorrectos 🚫');
         setCargando(false);
-        return;
       }
-      onLogin(data); 
 
     } catch (err) {
-      setError('Error de conexión');
+      setError('Error de conexión con el servidor');
       setCargando(false);
     }
   };

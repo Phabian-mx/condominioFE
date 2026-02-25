@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient'; 
+//aca estaba la supabase 
 
 const Notificaciones = () => {
   const [mensajes, setMensajes] = useState([]); 
@@ -8,21 +8,21 @@ const Notificaciones = () => {
 
   useEffect(() => {
     // 1. CARGA ASÍNCRONA DEL HISTORIAL
-    const cargarHistorial = async () => {
+  const cargarHistorial = async () => {
       try {
-        // Pedimos las últimas notificaciones
-        const { data, error } = await supabase
-          .from('notificaciones')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(10);
+        // Hacemos la petición GET a tu nueva API de Laravel
+        const respuesta = await fetch('http://localhost:8000/api/notificaciones');
+        
+        if (!respuesta.ok) {
+          throw new Error('Error en la red o servidor');
+        }
 
-        if (error) throw error;
+        const data = await respuesta.json(); // Convertimos la respuesta a JSON
 
         if (data && data.length > 0) {
-          // Formateamos
+          // Formateamos (tu lógica sigue intacta)
           const historialFormateado = data.map(n => ({
-            id: n.id, // ID es vital para saber cual es cual
+            id: n.id,
             texto: n.mensaje,
             hora: new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           }));

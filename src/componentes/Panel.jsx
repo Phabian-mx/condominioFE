@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
 import TarjetaVotacion from './TarjetaVotacion';
 import Notificaciones from './Notificaciones'; 
 
@@ -7,101 +6,57 @@ function Panel({ usuario }) {
   const [encuestas, setEncuestas] = useState([]);
   const [cargando, setCargando] = useState(true);
 
-  // --- 1. WEBSOCKET SUPABASE (REALTIME VOTOS) ---
+  // --- 1. CARGAR ENCUESTAS DESDE LARAVEL ---
   useEffect(() => {
     obtenerEncuestas();
-    const canal = supabase
-      .channel('cambios_votos')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'encuestas' }, () => {
-        obtenerEncuestas();
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(canal); };
   }, []);
 
   const obtenerEncuestas = async () => {
     try {
-      const { data, error } = await supabase
-        .from('encuestas').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      setEncuestas(data);
-    } catch (error) { console.error(error); } finally { setCargando(false); }
+      const respuesta = await fetch('http://localhost:8000/api/encuestas');
+      if (respuesta.ok) {
+        const data = await respuesta.json();
+        setEncuestas(data);
+      }
+    } catch (error) { 
+      console.error("Error cargando encuestas:", error); 
+    } finally { 
+      setCargando(false); 
+    }
   };
 
-  // --- 2. FUNCIONES DE USUARIO (VOTAR) ---
+  // --- 2. FUNCIONES TEMPORALES (Migrando a Laravel...) ---
   const manejarVoto = async (encuestaId, columna, votosActuales) => {
-    try {
-      // Verificar si ya votó
-      const { data: yaVoto } = await supabase
-        .from('historial_votos').select('id')
-        .eq('usuario_id', usuario.id).eq('encuesta_id', encuestaId).maybeSingle();
-
-      if (yaVoto) { alert("⛔ Ya votaste aquí."); return; }
-
-      // Registrar historial y sumar voto
-      await supabase.from('historial_votos').insert([{ usuario_id: usuario.id, encuesta_id: encuestaId }]);
-      await supabase.from('encuestas').update({ [columna]: votosActuales + 1 }).eq('id', encuestaId);
-
-    } catch (error) { alert('Error al votar'); }
+    alert("🚧 Votación en proceso de migración a Laravel.");
   };
 
-  // --- 3. FUNCIONES DE ADMIN ---
   const crearEncuesta = async () => {
-    const titulo = prompt("Título de la nueva votación:");
-    if (!titulo) return;
-    const desc = prompt("Descripción corta:");
-    const opA = prompt("Nombre Opción A (ej. Blanco):", "Opción A");
-    const opB = prompt("Nombre Opción B (ej. Azul):", "Opción B");
-
-    const { error } = await supabase
-      .from('encuestas')
-      .insert([{ titulo, descripcion: desc, opcion_a: opA, opcion_b: opB }]);
-
-    if (error) alert("Error al crear: " + error.message);
+    alert("🚧 Creación en proceso de migración a Laravel.");
   };
 
   const eliminarEncuesta = async (id) => {
-    if (!confirm("⚠️ ¿Estás seguro de BORRAR esta encuesta? Se perderán los datos.")) return;
-    await supabase.from('historial_votos').delete().eq('encuesta_id', id);
-    const { error } = await supabase.from('encuestas').delete().eq('id', id);
-    if (error) alert("Error al eliminar");
+    alert("🚧 Eliminación en proceso de migración a Laravel.");
   };
 
   const limpiarVotos = async (id) => {
-    if (!confirm("🔄 ¿Reiniciar contadores a CERO?")) return;
-    await supabase.from('historial_votos').delete().eq('encuesta_id', id);
-    const { error } = await supabase
-      .from('encuestas').update({ votos_a: 0, votos_b: 0 }).eq('id', id);
-    if (error) alert("Error al limpiar");
+    alert("🚧 Limpieza en proceso de migración a Laravel.");
   };
 
-  // --- 4. ALERTA / NOTIFICACIONES ---
+  // --- 4. ALERTA / NOTIFICACIONES (Ya usando Laravel) ---
   const lanzarAlerta = async () => {
     const mensaje = prompt("✍️ Escribe el aviso para los vecinos:", "¡Reunión urgente en recepción!");
     if (!mensaje) return; 
 
     try {
-      // A) Guardar en Historial (Supabase)
-      const { error } = await supabase
-        .from('notificaciones') 
-        .insert([{ mensaje: mensaje }]);
-
-      if (error) {
-        console.error("Error guardando en BD (Revisar RLS):", error);
-        alert("⚠️ Hubo un problema guardando el historial, pero intentaremos enviar la alerta.");
-      }
-
-      // B) Enviar Alerta Realtime (Laravel)
+      // Enviar Alerta a Laravel
       const respuesta = await fetch(`http://localhost:8000/crear-asamblea?mensaje=${encodeURIComponent(mensaje)}`);
       
       if(respuesta.ok) {
-        alert(`✅ Notificación guardada y enviada: "${mensaje}"`);
+        alert(`✅ Notificación enviada: "${mensaje}"`);
       } else {
-        alert("⚠️ Guardado en historial, pero el servidor de alertas falló.");
+        alert("⚠️ Hubo un error al enviar la notificación.");
       }
-
     } catch (error) {
-      console.error("Error general:", error);
       alert("❌ Error de conexión. Revisa que el Backend esté corriendo.");
     }
   };
@@ -140,6 +95,7 @@ function Panel({ usuario }) {
         <p className="text-center text-gray-500 py-10">Cargando encuestas...</p>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {encuestas.length === 0 && <p className="text-gray-500 col-span-3 text-center">No hay encuestas activas.</p>}
           {encuestas.map((item) => (
             <TarjetaVotacion 
               key={item.id} 

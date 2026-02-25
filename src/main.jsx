@@ -16,7 +16,7 @@ window.Echo = new Echo({
     wsHost: window.location.hostname,
     wsPort: 8080,         // ✅ Puerto 8080 configurado
     wssPort: 8080,
-    forceTLS: false,      // false = http (local)
+    forceTLS: false,      
     enabledTransports: ['ws', 'wss'],
 });
 
