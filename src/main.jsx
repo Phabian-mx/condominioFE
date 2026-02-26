@@ -14,10 +14,10 @@ window.Echo = new Echo({
     broadcaster: 'reverb',
     key: 'my-app-key',   
     wsHost: window.location.hostname,
-    wsPort: 8080,         // ✅ Puerto 8080 configurado
-    wssPort: 8080,
-    forceTLS: false,      
-    enabledTransports: ['ws', 'wss'],
+    wsPort: 8080,
+    forceTLS: false, 
+    disableStats: true, 
+    enabledTransports: ['ws'], 
 });
 
 console.log("📡 Conectando con clave 'my-app-key' al puerto 8080...");

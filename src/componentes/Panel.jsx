@@ -6,9 +6,29 @@ function Panel({ usuario }) {
   const [encuestas, setEncuestas] = useState([]);
   const [cargando, setCargando] = useState(true);
 
-  // --- 1. CARGAR ENCUESTAS DESDE LARAVEL ---
+  // --- 1. CARGAR ENCUESTAS INICIALES Y CONFIGURAR REALTIME ---
   useEffect(() => {
     obtenerEncuestas();
+
+    // 📡 ESCUCHAR EVENTOS EN TIEMPO REAL (Laravel Echo)
+    const canal = window.Echo.channel('condominio-canal')
+      .listen('.voto-actualizado', (e) => {
+        console.log("🗳️ Actualización de voto recibida:", e.encuesta);
+        
+        // Actualizamos solo la encuesta que cambió en el estado
+        setEncuestas((prev) => 
+          prev.map((enc) => (enc.id === e.encuesta.id ? e.encuesta : enc))
+        );
+      })
+      .listen('.aviso-creado', (e) => {
+        // Esto permite que el componente Notificaciones sepa que hay algo nuevo
+        console.log("📢 Nuevo aviso en el sistema");
+      });
+
+    // Limpiar conexión al salir
+    return () => {
+      window.Echo.leaveChannel('condominio-canal');
+    };
   }, []);
 
   const obtenerEncuestas = async () => {
@@ -25,39 +45,85 @@ function Panel({ usuario }) {
     }
   };
 
-  // --- 2. FUNCIONES TEMPORALES (Migrando a Laravel...) ---
-  const manejarVoto = async (encuestaId, columna, votosActuales) => {
-    alert("🚧 Votación en proceso de migración a Laravel.");
+  // --- 2. FUNCIONES DE ACCIÓN ---
+  
+  const manejarVoto = async (encuestaId, columna) => {
+    try {
+      const respuesta = await fetch(`http://localhost:8000/api/encuestas/${encuestaId}/votar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ usuario_id: usuario.id, columna: columna })
+      });
+
+      const data = await respuesta.json();
+
+      if (!data.exito) {
+        alert("⛔ " + data.mensaje); 
+      }
+     
+    } catch (error) { 
+      alert('Error de conexión al intentar votar'); 
+    }
   };
 
   const crearEncuesta = async () => {
-    alert("🚧 Creación en proceso de migración a Laravel.");
+    const titulo = prompt("Título de la nueva votación:");
+    if (!titulo) return;
+    const desc = prompt("Descripción corta:");
+    const opA = prompt("Nombre Opción A:", "Opción A");
+    const opB = prompt("Nombre Opción B:", "Opción B");
+
+    try {
+      const respuesta = await fetch('http://localhost:8000/api/encuestas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ titulo, descripcion: desc, opcion_a: opA, opcion_b: opB })
+      });
+
+      if (respuesta.ok) {
+        obtenerEncuestas(); // Aquí sí recargamos para ver la nueva encuesta creada
+      }
+    } catch (error) { 
+      alert("Error al crear la encuesta"); 
+    }
   };
 
   const eliminarEncuesta = async (id) => {
-    alert("🚧 Eliminación en proceso de migración a Laravel.");
+    if (!confirm("⚠️ ¿Estás seguro de BORRAR esta encuesta?")) return;
+    try {
+      const respuesta = await fetch(`http://localhost:8000/api/encuestas/${id}`, { method: 'DELETE' });
+      if (respuesta.ok) {
+        setEncuestas((prev) => prev.filter(enc => enc.id !== id));
+      }
+    } catch (error) { 
+      alert("Error al eliminar"); 
+    }
   };
 
   const limpiarVotos = async (id) => {
-    alert("🚧 Limpieza en proceso de migración a Laravel.");
+    if (!confirm("🔄 ¿Reiniciar contadores a CERO?")) return;
+    try {
+      await fetch(`http://localhost:8000/api/encuestas/${id}/limpiar`, { method: 'POST' });
+      // El WebSocket se encargará de poner los contadores a 0 en la pantalla
+    } catch (error) { 
+      alert("Error al limpiar"); 
+    }
   };
 
-  // --- 4. ALERTA / NOTIFICACIONES (Ya usando Laravel) ---
   const lanzarAlerta = async () => {
-    const mensaje = prompt("✍️ Escribe el aviso para los vecinos:", "¡Reunión urgente en recepción!");
+    const mensaje = prompt("✍️ Escribe el aviso para los vecinos:");
     if (!mensaje) return; 
 
     try {
-      // Enviar Alerta a Laravel
-      const respuesta = await fetch(`http://localhost:8000/crear-asamblea?mensaje=${encodeURIComponent(mensaje)}`);
+      const respuesta = await fetch('http://localhost:8000/api/notificaciones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ mensaje: mensaje })
+      });
       
-      if(respuesta.ok) {
-        alert(`✅ Notificación enviada: "${mensaje}"`);
-      } else {
-        alert("⚠️ Hubo un error al enviar la notificación.");
-      }
+      if(!respuesta.ok) alert("⚠️ Error al enviar notificación.");
     } catch (error) {
-      alert("❌ Error de conexión. Revisa que el Backend esté corriendo.");
+      alert("❌ Error de conexión.");
     }
   };
 
@@ -68,7 +134,7 @@ function Panel({ usuario }) {
           <h1 className="text-3xl font-bold text-slate-800">🏡 Panel de Vecinos</h1>
           <div className="flex items-center gap-2 text-slate-500 mt-1">
             <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-            <p>Hola, <strong>{usuario.nombre || usuario.email}</strong> {usuario.es_admin && "(Administrador)"}</p>
+            <p>Hola, <strong>{usuario.nombre}</strong> {usuario.es_admin ? "(Admin)" : ""}</p>
           </div>
         </div>
 

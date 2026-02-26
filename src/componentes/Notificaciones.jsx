@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-//aca estaba la supabase 
 
 const Notificaciones = () => {
   const [mensajes, setMensajes] = useState([]); 
@@ -8,19 +7,14 @@ const Notificaciones = () => {
 
   useEffect(() => {
     // 1. CARGA ASÍNCRONA DEL HISTORIAL
-  const cargarHistorial = async () => {
+    const cargarHistorial = async () => {
       try {
-        // Hacemos la petición GET a tu nueva API de Laravel
         const respuesta = await fetch('http://localhost:8000/api/notificaciones');
-        
-        if (!respuesta.ok) {
-          throw new Error('Error en la red o servidor');
-        }
+        if (!respuesta.ok) throw new Error('Error en la red o servidor');
 
-        const data = await respuesta.json(); // Convertimos la respuesta a JSON
+        const data = await respuesta.json();
 
         if (data && data.length > 0) {
-          // Formateamos (tu lógica sigue intacta)
           const historialFormateado = data.map(n => ({
             id: n.id,
             texto: n.mensaje,
@@ -29,20 +23,13 @@ const Notificaciones = () => {
           
           setMensajes(historialFormateado);
 
-          // --- 🔥 LÓGICA NUEVA: PUNTITO ROJO AL ENTRAR 🔥 ---
-          // Recuperamos el ID del último mensaje que el vecino vio la última vez
           const ultimoVisto = localStorage.getItem('ultimo_aviso_visto');
-          
-          // El mensaje más reciente es el primero de la lista (índice 0)
           const mensajeMasReciente = historialFormateado[0].id;
 
-          // Si el ID más nuevo es diferente al que tenemos guardado, ¡HAY NUEVO!
-          // Convertimos a String ambos para evitar errores de tipos (número vs texto)
           if (String(mensajeMasReciente) !== String(ultimoVisto)) {
             setHayNuevas(true);
           }
         }
-
       } catch (error) {
         console.error("Error historial:", error.message);
       }
@@ -50,37 +37,42 @@ const Notificaciones = () => {
 
     cargarHistorial(); 
 
-    // 2. ESCUCHA EN VIVO
+    // 2. ESCUCHA EN VIVO USANDO EL ECHO GLOBAL 
     if (window.Echo) {
-      window.Echo.channel('comunidad')
-        .listen('.asamblea.creada', (e) => {
-          console.log("⚡ Alerta en vivo:", e);
-          
-          // Creamos el objeto del mensaje nuevo
-          const nuevoMensaje = { 
-            id: Date.now(), // ID temporal
-            texto: e.mensaje, 
-            hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-          };
+        window.Echo.channel('condominio-canal')
+            .listen('.aviso-creado', (e) => {
+              console.log("⚡ Alerta en vivo:", e);
+              
+              // Formateamos el mensaje tal como lo manda Laravel
+              const nuevoMensaje = { 
+                id: e.notificacion.id, 
+                texto: e.notificacion.mensaje, 
+                hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+              };
 
-          setMensajes((prev) => [nuevoMensaje, ...prev]);
-          setHayNuevas(true); // Prender foco rojo inmediatamente
-        });
+              // Lo agregamos hasta arriba de la lista
+              setMensajes((prev) => [nuevoMensaje, ...prev]);
+              setHayNuevas(true); // Prender foco rojo inmediatamente
+            });
+    } else {
+        console.error("⚠️ window.Echo no está inicializado. Revisa main.jsx");
     }
 
+    // 3. Limpiamos al salir
     return () => {
-      if (window.Echo) window.Echo.leave('comunidad');
+      if (window.Echo) {
+          window.Echo.leaveChannel('condominio-canal');
+      }
     };
   }, []);
 
   const alternarMenu = () => {
     const nuevoEstado = !mostrarMenu;
     setMostrarMenu(nuevoEstado);
-
-    // --- 🔥 AL ABRIR, MARCAMOS TODO COMO VISTO 🔥 ---
+    
+   
     if (nuevoEstado === true && mensajes.length > 0) {
-      setHayNuevas(false); // Apagamos el foco
-      // Guardamos en la memoria del navegador el ID del mensaje más nuevo (el primero)
+      setHayNuevas(false);
       localStorage.setItem('ultimo_aviso_visto', mensajes[0].id);
     }
   };
